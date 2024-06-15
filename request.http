@@ -1,5 +1,17 @@
 ### GET
-GET http://localhost:8000/
+GET http://127.0.0.1:8000/
 
-### GET ITEM
-GET http://localhost:8000/items/1
+### GET
+GET http://127.0.0.1:8000/users/
+
+### GET
+GET http://127.0.0.1:8000/users/2
+
+### CREATE USER
+POST http://localhost:8000/register/
+
+{
+    "username": "admin",
+    "email": "admin@admin.comm",
+    "password": "test"
+}
