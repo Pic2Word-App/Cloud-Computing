@@ -18,3 +18,11 @@ class Users(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     
+class Token(Base):
+    __tablename__ = "token"
+    
+    token_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    access_token = Column(String)
+    token_type = Column(String)
+    

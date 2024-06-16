@@ -5,13 +5,29 @@ GET http://127.0.0.1:8000/
 GET http://127.0.0.1:8000/users/
 
 ### GET
-GET http://127.0.0.1:8000/users/2
+GET http://127.0.0.1:8000/users/3
 
 ### CREATE USER
 POST http://localhost:8000/register/
 
 {
-    "username": "admin",
+    "username": "test",
+    "email": "test@test.com",
+    "password": "test"
+}
+
+
+### LOGIN
+POST http://localhost:8000/login
+
+{
     "email": "admin@admin.comm",
     "password": "test"
 }
+
+### ME
+GET http://localhost:8000/users/me/
+
+
+### TEST
+GET http://localhost:8000/test/

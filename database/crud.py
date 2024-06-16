@@ -1,13 +1,34 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from typing import Annotated
 
-from fastapi import HTTPException
+import jwt
+from fastapi import HTTPException, status, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from passlib.context import CryptContext
+from .database import SessionLocal
 
 from . import models, schemas
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+SECRET_KEY = "apakek"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60*24
+
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return (
@@ -21,11 +42,21 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 def get_user_by_id(db: Session, user_id: int):
     try:
-        return (
+        user =  (
             db.query(models.Users)
             .filter(models.Users.user_id == user_id)
             .first()
           )
+        
+        return {
+            "user_id": user.user_id,
+            "username": user.username,
+            "email": user.email,
+            "jenis_kelamin": user.jenis_kelamin,
+            "tanggal_lahir": user.tanggal_lahir,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at
+        }
     except:
         raise HTTPException(
             status_code=404, detail=f"User not found with ID {user_id}"
@@ -35,8 +66,18 @@ def get_user_by_id(db: Session, user_id: int):
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+
+def authenticate_user(db: Session, username: str, password: str):
+    user = db.query(models.Users).filter(models.Users.email == username).first()
+    if not user:
+        return False
+    if not verify_password(password, user.password):
+        return False
+    return user
 
 
 def register(db: Session, user: schemas.UserCreate):
@@ -55,31 +96,52 @@ def register(db: Session, user: schemas.UserCreate):
     db.commit()
     db.refresh(db_user)
     return db_user
+  
+  
+def get_user(db, user_id: int):
+    if user_id in db:
+        user_dict = db[user_id]
+        return models.Users(**user_dict)
 
 
-def update_user(
-    db: Session, user_id: int, user_partial: schemas.UserUpdate
-):
-    user = (
-        db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    )
-    user_data = user_partial.dict(exclude_unset=True)
-    for key, value in user_data.items():
-        setattr(user, key, value)
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def delete_user(db: Session, user_id: int):
-    user = (
-        db.query(models.Users).filter(models.Users.user_id == user_id).first()
-    )
-    if user:
-        db.delete(user)
-        db.commit()
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        raise HTTPException(
-            status_code=404, detail=f" not found with ID {user_id}"
-        )
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+  
+  
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except InvalidTokenError:
+        raise credentials_exception
+    user = get_user_by_id(SessionLocal(), user_id)
+    if user is None:
+        raise credentials_exception
+    return user
+  
+  
+def update_user(db: Session, user: schemas.UserUpdate, current_user: dict):
+    user_data = user.dict(exclude_unset=True)
+    user_data["updated_at"] = datetime.now(timezone.utc)
+    db_user = db.query(models.Users).filter(models.Users.user_id == current_user.get("user_id")).first()
+    for key, value in user_data.items():
+        setattr(db_user, key, value)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+    
+
