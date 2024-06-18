@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Optional
 
 from datetime import datetime
 from pydantic import BaseModel

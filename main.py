@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .database import models, schemas, crud
 from .database.database import SessionLocal, engine
 from .database.crud import get_current_user
+import os
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -62,3 +63,8 @@ def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db), cu
 @app.post("/translate")
 def translate_text(target: str, text: str):
     return crud.translate_text(target, text)
+  
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)
