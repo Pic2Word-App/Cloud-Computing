@@ -1,14 +1,11 @@
 from typing import List, Annotated
 
-from fastapi import Depends, FastAPI, Response, status, HTTPException, UploadFile, File
-from fastapi_gcs import FGCSUpload, FGCSGenerate, FGCSDelete
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .database import models, schemas, crud
 from .database.database import SessionLocal, engine
 from .database.crud import get_current_user
-from google.cloud import storage
-import os
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -61,3 +58,7 @@ def update_user(user: schemas.UserUpdate, db: Session = Depends(get_db), current
 @app.post("/upload/", response_model=dict())
 def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), prediction: str = None, translate: str = None):
     return crud.upload_image(file, db, current_user, prediction, translate)
+  
+@app.post("/translate")
+def translate_text(target: str, text: str):
+    return crud.translate_text(target, text)
