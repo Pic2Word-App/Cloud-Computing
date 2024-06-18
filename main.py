@@ -76,14 +76,6 @@ def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db), cu
 def get_images(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     return crud.get_images(db, current_user["user_id"])
   
-
-@app.get("/images/{image_name}")
-def get_image(image_name: str, current_user: dict = Depends(get_current_user)):
-    blob = bucket.blob(f"image/{image_name}")
-    image_path = Path(blob._get_download_url(client=storage_client))
-    if not image_path.is_file():
-        return {"error": "Image not found on the server"}
-    return FileResponse(image_path)
   
 if __name__ == "__main__":
     import uvicorn
