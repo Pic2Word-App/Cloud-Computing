@@ -188,3 +188,24 @@ def translate_text(target: str, text: str) -> dict:
     result = translate_client.translate(text, target_language=target, source_language="id")
 
     return result
+
+
+def get_images(db: Session, user_id: int):
+    images = db.query(models.Image).filter(models.Image.user_id == user_id).all()
+    
+    return [
+        {
+            "image_id": image.image_id,
+            "user_id": image.user_id,
+            "image_url": image.image_url,
+            "image_name": image.image_name,
+            "prediction": image.prediction,
+            "translate": image.translate
+        }
+        for image in images
+    ]
+    
+
+def get_image(image_name: str):
+    blob = bucket.blob(f"image/{image_name}")
+    return blob.download_as_bytes()

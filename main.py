@@ -1,16 +1,22 @@
 from typing import List, Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, Path, Response, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .database import models, schemas, crud
 from .database.database import SessionLocal, engine
 from .database.crud import get_current_user
 import os
+from google.cloud import storage
 
 models.Base.metadata.create_all(bind=engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+storage_client = storage.Client()
+bucket_name = os.getenv("BUCKET_NAME")
+bucket = storage_client.bucket(bucket_name)
 
 app = FastAPI()
 
@@ -56,13 +62,28 @@ def update_user(user: schemas.UserUpdate, db: Session = Depends(get_db), current
     return crud.update_user(db, user, current_user)
 
 
+@app.post("/translate")
+def translate_text(target: str, text: str):
+    return crud.translate_text(target, text)
+
+
 @app.post("/upload/", response_model=dict())
 def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), prediction: str = None, translate: str = None):
     return crud.upload_image(file, db, current_user, prediction, translate)
   
-@app.post("/translate")
-def translate_text(target: str, text: str):
-    return crud.translate_text(target, text)
+
+@app.get("/images/me", response_model=List[dict])
+def get_images(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    return crud.get_images(db, current_user["user_id"])
+  
+
+@app.get("/images/{image_name}")
+def get_image(image_name: str, current_user: dict = Depends(get_current_user)):
+    blob = bucket.blob(f"image/{image_name}")
+    image_path = Path(blob._get_download_url(client=storage_client))
+    if not image_path.is_file():
+        return {"error": "Image not found on the server"}
+    return FileResponse(image_path)
   
 if __name__ == "__main__":
     import uvicorn
