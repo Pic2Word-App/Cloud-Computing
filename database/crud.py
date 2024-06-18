@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 from .database import SessionLocal
 from google.cloud import storage
 import os
+from google.cloud import translate_v2 as translate
 
 from . import models, schemas
 
@@ -176,7 +177,6 @@ def translate_text(target: str, text: str) -> dict:
     Target must be an ISO 639-1 language code.
     See https://g.co/cloud/translate/v2/translate-reference#supported_languages
     """
-    from google.cloud import translate_v2 as translate
 
     translate_client = translate.Client()
 
