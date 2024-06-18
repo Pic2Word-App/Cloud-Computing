@@ -26,3 +26,15 @@ class Token(Base):
     access_token = Column(String)
     token_type = Column(String)
     
+    
+class Image(Base):
+    __tablename__ = "image"
+    
+    image_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    image_url = Column(String)
+    image_name = Column(String)
+    prediction = Column(String)
+    translate = Column(String)
+    
+    

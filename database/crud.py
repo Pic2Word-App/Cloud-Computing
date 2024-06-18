@@ -2,15 +2,21 @@ from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
 import jwt
-from fastapi import HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import HTTPException, status, Depends, UploadFile
+from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from passlib.context import CryptContext
 from .database import SessionLocal
+from google.cloud import storage
+import os
 
 from . import models, schemas
+
+storage_client = storage.Client()
+bucket_name = os.getenv("BUCKET_NAME")
+bucket = storage_client.bucket(bucket_name)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -145,3 +151,20 @@ def update_user(db: Session, user: schemas.UserUpdate, current_user: dict):
     return db_user
     
 
+def upload_image(file: UploadFile, db: Session, current_user: dict, prediction: str = None, translate: str = None):
+    blob_path = f"image/{file.filename}"
+    blob = bucket.blob(blob_path)
+    blob.upload_from_file(file.file)
+    image_data = {
+        "user_id": current_user.get("user_id"),
+        "image_url": f"https://storage.googleapis.com/{bucket_name}/{file.filename}",
+        "image_name": file.filename,
+        "prediction": prediction,
+        "translate": translate
+    }
+    db_image = models.Image(**image_data)
+    db.add(db_image)
+    db.commit()
+    db.refresh(db_image)
+    
+    return image_data

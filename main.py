@@ -1,18 +1,20 @@
 from typing import List, Annotated
 
-from fastapi import Depends, FastAPI, Response, status, HTTPException
+from fastapi import Depends, FastAPI, Response, status, HTTPException, UploadFile, File
+from fastapi_gcs import FGCSUpload, FGCSGenerate, FGCSDelete
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .database import models, schemas, crud
 from .database.database import SessionLocal, engine
 from .database.crud import get_current_user
+from google.cloud import storage
+import os
 
 models.Base.metadata.create_all(bind=engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
-
 
 # Dependency
 def get_db():
@@ -54,3 +56,8 @@ def read_users_me(current_user: dict = Depends(get_current_user)):
 @app.put("/users/me", response_model=schemas.Users)
 def update_user(user: schemas.UserUpdate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
     return crud.update_user(db, user, current_user)
+
+
+@app.post("/upload/", response_model=dict())
+def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user), prediction: str = None, translate: str = None):
+    return crud.upload_image(file, db, current_user, prediction, translate)
