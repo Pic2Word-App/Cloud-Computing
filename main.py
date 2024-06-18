@@ -4,11 +4,12 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Response, UploadFile,
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from .database import models, schemas, crud
-from .database.database import SessionLocal, engine
-from .database.crud import get_current_user
+from database import models, schemas, crud
+from database.database import SessionLocal, engine
+from database.crud import get_current_user
 import os
 from google.cloud import storage
+import uvicorn
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -78,6 +79,5 @@ def get_images(db: Session = Depends(get_db), current_user: dict = Depends(get_c
   
   
 if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
