@@ -5,3 +5,5 @@ pyjwt
 passlib[bcrypt]
 google-cloud-storage
 pydantic
+google-cloud
+cloud-sql-python-connector
