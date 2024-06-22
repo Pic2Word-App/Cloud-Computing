@@ -1,16 +1,47 @@
 from typing import Optional
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
-class RegisterUser(BaseModel):
-    username: str
-    email: str
-    password: str
-    
-class LoginUser(BaseModel):
-    email: str
-    password: str
+class UserSchema(BaseModel):
+    username: str = Field(...)
+    email: EmailStr = Field(...)
+    password: str = Field(...)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "Abdulazeez Abdulazeez Adeshina",
+                "email": "abdulazeez@x.com",
+                "password": "weakpassword"
+            }
+        }
+        
+class UserLoginSchema(BaseModel):
+    email: EmailStr = Field(...)
+    password: str = Field(...)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "abdulazeez@x.com",
+                "password": "weakpassword"
+            }
+        }
+
+class UserUpdateSchema(BaseModel):
+    username: Optional[str] = Field(...)
+    jenis_kelamin: Optional[str] = Field(...)
+    tanggal_lahir: Optional[datetime] = Field(...)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "Abdulazeez Abdulazeez Adeshina",
+                "jenis_kelamin": "Laki-laki",
+                "tanggal_lahir": "1995-11-23"
+            }
+        }
 
 class UsersBase(BaseModel):
     user_id: int | None = None

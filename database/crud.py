@@ -2,7 +2,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Annotated
 
 import jwt
-from fastapi import HTTPException, status, Depends, UploadFile
+from fastapi import HTTPException, status, Depends, UploadFile, Header, Request
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.orm import Session
@@ -19,7 +19,7 @@ storage_client = storage.Client()
 bucket_name = os.getenv("BUCKET_NAME")
 bucket = storage_client.bucket(bucket_name)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -78,7 +78,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(db: Session, loginUser: schemas.LoginUser):
+def authenticate_user(db: Session, loginUser: schemas.UserLoginSchema):
     user = db.query(models.Users).filter(models.Users.email == loginUser.email).first()
     if not user:
         return False
@@ -87,7 +87,7 @@ def authenticate_user(db: Session, loginUser: schemas.LoginUser):
     return user
 
 
-def register(db: Session, registerUser: schemas.RegisterUser):
+def register(db: Session, registerUser: schemas.UserSchema):
     #check if email already exists
     user_exists = db.query(models.Users).filter(models.Users.email == registerUser.email).first()
     if user_exists:
@@ -123,7 +123,8 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
   
   
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(request: Request, token: Annotated[str, Depends(oauth2_scheme)]):
+    token = request.headers.get("Authorization")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

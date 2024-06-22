@@ -18,3 +18,6 @@ EXPOSE 8080
 
 # Command to run the application using Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# Command to run the application using fastapi
+# CMD ["fastapi", "run", "main.py"]
