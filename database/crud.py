@@ -78,8 +78,8 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(models.Users).filter(models.Users.email == username).first()
+def authenticate_user(db: Session, email: str, password: str):
+    user = db.query(models.Users).filter(models.Users.email == email).first()
     if not user:
         return False
     if not verify_password(password, user.password):
@@ -87,17 +87,18 @@ def authenticate_user(db: Session, username: str, password: str):
     return user
 
 
-def register(db: Session, user: schemas.UserCreate):
+def register(db: Session, name: str, email: str, password: str):
     #check if email already exists
-    user_exists = db.query(models.Users).filter(models.Users.email == user.email).first()
+    user_exists = db.query(models.Users).filter(models.Users.email == email).first()
     if user_exists:
         raise HTTPException(
             status_code=400, detail="Email already registered"
         )
-    user_data = user.dict()
-    user_data["password"] = get_password_hash(user_data["password"])
-    user_data["created_at"] = datetime.now(timezone.utc)
-    user_data["updated_at"] = datetime.now(timezone.utc)
+    user_data = {
+        "username": name,
+        "email": email,
+        "password": get_password_hash(password)
+    }
     db_user = models.Users(**user_data)
     db.add(db_user)
     db.commit()

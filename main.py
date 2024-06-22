@@ -4,9 +4,9 @@ from fastapi import Depends, FastAPI, HTTPException, Path, Response, UploadFile,
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from database import models, schemas, crud
-from database.database import SessionLocal, engine
-from database.crud import get_current_user
+from .database import models, schemas, crud
+from .database.database import SessionLocal, engine
+from .database.crud import get_current_user
 import os
 from google.cloud import storage
 import uvicorn
@@ -35,13 +35,13 @@ def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return crud.get_users(db, skip=skip, limit=limit)
 
 @app.post("/register/", response_model=schemas.Users)
-def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    return crud.register(db=db, user=user)
+def register(name:str, email:str, password:str, db: Session = Depends(get_db)):
+    return crud.register(db=db, name=name, email=email, password=password)
   
 
-@app.post("/token", response_model=dict())
-def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session = Depends(get_db)):
-    authenticated_user = crud.authenticate_user(db, form_data.username, form_data.password)
+@app.post("/login", response_model=dict())
+def login_for_access_token(email:str, password: str, db: Session = Depends(get_db)):
+    authenticated_user = crud.authenticate_user(db, email, password)
     if not authenticated_user:
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     access_token = crud.create_access_token(data={"sub": authenticated_user.user_id})
