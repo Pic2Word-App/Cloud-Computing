@@ -10,6 +10,7 @@ from .database.crud import get_current_user
 import os
 from google.cloud import storage
 import uvicorn
+from pydantic import BaseModel
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -30,18 +31,18 @@ def get_db():
         db.close()
 
 
-@app.get("/users/", response_model=List[schemas.Users])
+@app.get("/users", response_model=List[schemas.Users])
 def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     return crud.get_users(db, skip=skip, limit=limit)
 
-@app.post("/register/", response_model=schemas.Users)
-def register(name:str, email:str, password:str, db: Session = Depends(get_db)):
-    return crud.register(db=db, name=name, email=email, password=password)
+@app.post("/register", response_model=schemas.Users)
+def register(registerUser: schemas.RegisterUser, db: Session = Depends(get_db)):
+    return crud.register(db=db, registerUser=registerUser)
   
 
 @app.post("/login", response_model=dict())
-def login_for_access_token(email:str, password: str, db: Session = Depends(get_db)):
-    authenticated_user = crud.authenticate_user(db, email, password)
+def login_for_access_token(loginUser: schemas.LoginUser, db: Session = Depends(get_db)):
+    authenticated_user = crud.authenticate_user(db, loginUser)
     if not authenticated_user:
         raise HTTPException(status_code=401, detail="Incorrect username or password")
     access_token = crud.create_access_token(data={"sub": authenticated_user.user_id})

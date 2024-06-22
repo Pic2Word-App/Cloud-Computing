@@ -3,6 +3,15 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
 
+class RegisterUser(BaseModel):
+    username: str
+    email: str
+    password: str
+    
+class LoginUser(BaseModel):
+    email: str
+    password: str
+
 class UsersBase(BaseModel):
     user_id: int | None = None
     username: str | None = None
